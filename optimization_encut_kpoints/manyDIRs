@@ -1,0 +1,13 @@
+#!/bin/bash
+for kp in "20" "30"; do
+  for encut in "600" "800"; do
+   mkdir ${encut}_${kp}
+   echo "${encut}_${kp} directory was created"
+   cd ${encut}_${kp}
+   sed -e "s/encut/${encut}/g"  ../init/INCAR > INCAR
+   cp ../init/POSCAR .
+   sed -e "s/kp/${kp}/g" ../init/KPOINTS > KPOINTS
+   cp ../init/POTCAR .
+   cd ..
+  done
+done
