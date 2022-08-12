@@ -1,0 +1,6 @@
+#!/bin/bash
+#SBATCH -p MOF
+#SBATCH -n 72
+#SBATCH -J st107
+
+srun vasp541-std.04 > out
