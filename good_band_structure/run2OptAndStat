@@ -1,0 +1,41 @@
+#!/bin/bash
+#SBATCH -p part02
+#SBATCH -n 24
+#SBATCH -J fastcalc
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#   This script run optimization structure. After that it can
+#   copy result in another directory and run second task
+#   for set parameters according static calculation. In the end
+#   of process You will get good CHGCAR. It can be used in band
+#   structure analysis.
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+for compound in $(ls ../1structures) ; do
+ if [ ! -d $compound ] ; then mkdir $compound ; fi ; echo "### $compound ###"
+ for length in "15"; do
+  if [ ! -d $compound/$length ] ; then mkdir $compound/$length ; fi
+  for encut in "600"; do
+    workdir=$compound/$length/$encut
+    if [ ! -d $workdir ] ; then mkdir $workdir ; else rm -r $workdir/* ; fi
+    cp ../1structures/$compound $workdir/POSCAR
+    sed -e "s/encut/${encut}/g"   tINCAR   > $workdir/INCAR
+    sed -e "s/length/${length}/g" tKPOINTS > $workdir/KPOINTS
+    cd $workdir
+    echo "$compound $length $encut is started"
+    /home/users/py/albina/bin/vasp/potcar_gen
+    srun vasp541-std.04 > out
+    mkdir stat
+    cd stat
+#    cp ../CHGCAR CHGCAR
+    cp ../../../../INCARstat INCAR1
+    sed -e "s/encut/${encut}/g"   INCAR1  > INCAR
+    rm INCAR1
+    cp ../CONTCAR POSCAR
+    cp ../KPOINTS KPOINTS
+    cp ../POTCAR POTCAR
+    srun vasp541-std.04 > out
+    cd ../
+    cd ../../..
+  done
+ done
+ echo "$compound done!!!"
+done

@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ ! -d bandALL ] ; then mkdir bandALL ; else rm bandALL/* ; fi
+BAND=0
+str=1
+while IFS='' read -r line || [[ -n "$line" ]]; do
+#echo $line >> bandALL/test.txt
+#temp=${line:0:1};
+#temp=$(awk 'NR==$str {print $1}' bands.txt)
+temp=$(awk "NR==$str" bands.txt | awk '{print $1}')
+echo $temp;
+ if [ $temp -eq $BAND ] ; then #echo $BAND
+ echo $line >> bandALL/$BAND
+ fi
+ if [ $temp -ne $BAND ] ; then
+ BAND=$(($BAND+1))
+ echo $line >> bandALL/$BAND
+ fi
+str=$(($str+1))
+done < bands.txt
