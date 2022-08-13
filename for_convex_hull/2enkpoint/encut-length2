@@ -1,0 +1,30 @@
+for compound in $(ls ../1structures) ; do
+ if [ -d result_$compound ] ; then rm -r result_$compound ; fi
+ mkdir result_${compound}
+ cp ../1structures/$compound result_$compound/POSCAR
+ cd $compound
+ echo "### $compound ###"
+ for length in $(find * -maxdepth 0 -type d) ; do
+  echo -n "K-MESH length = $length! ENCUT = "
+  cd $length
+  for encut in $(find * -maxdepth 0 -type d) ; do
+   cd $encut
+   if grep -q "General timing" OUTCAR ; then
+    echo -n " $encut  "
+    cp CONTCAR ../../../result_$compound/CONTCAR_${length}_${encut}.vasp
+    energy=$(grep "free  energy   TOTEN  =" OUTCAR | tail -n 1 | awk ' {print $5} ')
+    time=$(grep "Elapsed time (sec)" OUTCAR | awk ' {print $4} ')
+    echo -n "$compound   $length   $encut   $energy  $time  " >> ../../../result_$compound/result
+    grep "length of vectors" OUTCAR -A 1 | tail -n 1 | awk ' {print $1,$2,$3} ' >> ../../../result_$compound/result
+   else
+    echo "$length   $encut " >> ../../../result_$compound/result
+   fi
+   cd ..
+  done
+  echo "... completed"
+  cd ..
+ done
+ echo "### $compound completed ###"
+ cd ..
+done
+echo "### D O N E ###"

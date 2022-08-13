@@ -1,0 +1,13 @@
+#!/bin/bash
+for T in structure
+do cd $T
+for i in `find . -depth -type d`
+do
+cd $i
+pwd
+energy=$(grep "free  energy   TOTEN  =" OUTCAR | tail -n 1 | awk ' {print $5} ')
+echo "$energy" 
+cd ../
+done
+cd ../
+done

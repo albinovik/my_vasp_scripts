@@ -1,0 +1,9 @@
+#!/bin/bash
+cd 2enkpoint
+for i in `find . -depth -type d`
+do
+cd $i
+cat result >> ../../out.txt
+cd ../
+done
+

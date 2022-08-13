@@ -1,0 +1,32 @@
+#!/bin/bash
+num=$(wc trem -l | awk {'print $1'})
+echo "number og strings in out: $num"
+for ((j=1;j<=$num-1;j++))
+do
+let 'k=j+1'
+#echo "$k"
+ str=$(awk "NR==$j" trem)
+ str2=$(awk "NR==$k" trem) 
+ #string=$(echo -e $(awk '{ for(k=NF; k>0; --k) {print $k " " }}' <<< "$str"))
+ #echo "$str"
+ #sed -i "${j}s/.*/${string} /" out
+ #cat out > temp
+ #awk '!seen[$0]++' temp > out
+ ./perm 12 11 $str 2.0 -2.0 $str2 >> temp
+ awk '!seen[$0]++' temp > out
+done
+#i=1
+#j=0
+#number=2084
+#for ((k=1; k<=230001; k++))
+#do
+#  for ((i=1; i<=$number; i++))
+#  do
+#  ./perm 12 11 $i 2.0 -2.0 $j >> temp
+#  awk '!seen[$0]++' temp >> out
+#  rm temp
+#  done
+#  let ''
+#done
+#awk '!seen[$0]++' temp >> out
+#rm temp

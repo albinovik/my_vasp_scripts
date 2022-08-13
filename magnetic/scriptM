@@ -1,0 +1,36 @@
+#!/bin/bash
+allnumber=$(wc POSCAR -l | awk {'print $1'})
+Natoms=$(($allnumber - 8))
+echo "amount of lines = $allnumber"
+echo "amount of atoms = $Natoms"
+#let "popolam=$Natoms/2"
+#echo "polovina atomov = $popolam"
+#string='2.0'
+#string2='-2.0'
+#echo "stroki = $string and $string2 according"
+perestanovki=$(echo 'define fac(x) {if (x>1){return x*fac(x-1)};return 1} fac(16)' | bc)
+echo $perestanovki
+let "lan=$Natoms-1"
+#echo "$Natoms $lan 2 $string $string2"
+for ((i=1; i<=$perestanovki; i++))
+do
+./perm ${Natoms} ${lan} $i 2.0 -2.0 >> temp
+awk '!seen[$0]++' temp > temp2
+cat temp2 > temp
+done
+awk '!seen[$0]++' temp > out
+rm temp
+rm temp2
+num=$(wc POSCAR -l | awk {'print $1'})
+echo "number og strings in out: $num"
+for ((j=1;j<=$num;j++))
+do
+str=$(awk "NR==$j" out)
+string=$(echo -e $(awk '{ for(k=NF; k>0; --k) {print $k " " }}' <<< "$str"))
+#echo "$string"
+sed -i "${j}s/.*/${string} /" out
+cat out > temp
+awk '!seen[$0]++' temp > out
+#let j=j+1
+done
+rm temp

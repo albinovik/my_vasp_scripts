@@ -1,0 +1,30 @@
+#!/bin/bash
+cd 1metals/2enkpoint
+for i in "pd" "pt" "sc"; do
+find . -maxdepth 0 -type d -name "result_${i}"
+cd result_${i}
+pwd
+cat result > ../../../out${i}.txt
+cd ..
+done
+cd ../..
+cd 1metals2/2enkpoint
+#done
+for i in "pd" "pt" "sc"; do
+find . -maxdepth 0 -type d -name "result_${i}"
+cd result_${i}
+pwd
+cat result >> ../../../out${i}.txt
+cd ..
+done
+cd ../..
+cd 2ordered_models/2enkpoint
+for i in "sc54pd17" "sc54pt17" "sc57pd13" "sc57pt13"; do
+find . -maxdepth 0 -type d -name "result_${i}"
+cd result_${i}
+pwd
+cat result >> ../../../outM.txt
+cd ..
+done
+
+
