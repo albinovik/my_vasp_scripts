@@ -1,0 +1,17 @@
+#!/bin/bash
+#SBATCH -p MOF
+#SBATCH -n 24
+#SBATCH -J set
+
+for coef in "0.900" "0.9125" "0.9250" "0.9375" "0.9500" "0.9625" "0.9750" "0.9875" "1.000" "1.0125" "1.0250" "1.0275" "1.0500" "1.0625" "1.0750" "1.0875" "1.1000"; do
+ mkdir ${coef}
+ echo "${coef} directory was created"
+ cd ${coef}
+ cp ../init/INCAR .
+ sed -e "s/coef/${coef}/g"  ../init/POSCAR > POSCAR
+ cp ../init/KPOINTS .
+ ~/bin/vasp/potcar_gen
+ srun vasp541-std.04 > out
+ rm vasprun.xml
+ cd ..
+done

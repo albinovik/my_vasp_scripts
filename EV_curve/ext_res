@@ -1,0 +1,10 @@
+#!/bin/bash
+for coef in "0.900" "0.9125" "0.9250" "0.9375" "0.9500" "0.9625" "0.9750" "0.9875" "1.000" "1.0125" "1.0250" "1.0275" "1.0500" "1.0625" "1.0750" "1.0875" "1.1000"; do
+ cd ${coef}
+ energy=$(grep "free  energy   TOTEN  =" OUTCAR | tail -n 1 | awk ' {print $5} ')
+ volume=$(grep "volume of cell :" OUTCAR | tail -n 1 | awk ' {print $5} ')
+ press=$(grep "external pressure =" OUTCAR | tail -n 1 | awk ' {print $4} ')
+ echo -n "$coef  $volume  $energy $press" >> ../result
+ echo \ >> ../result
+ cd ..
+done

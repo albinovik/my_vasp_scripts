@@ -1,0 +1,357 @@
+#!/bin/bash
+MS=$1         #Specify the type of mobile ions
+export LC_NUMERIC="en_US.UTF-8"
+FILENAME=CONTCAR
+OUTFILE=PATHS.txt
+FULL_MAP=FULL_MAP.vasp
+PATH_LENGTH=4 #Maximum path length in Angstrom
+NPOS=7 #Number of intermediate atomic positions in each path
+PATH_COUNTER=0
+echo " "
+echo " "
+echo "============================================================="
+echo " PPP    AA   TTTTTTT H   H  FFFF  I  N   N  DDD  EEEE  RRR   "
+echo " P  P  A  A     T    H   H  F     I  NN  N  D  D E     R  R  "
+echo " PPP  A    A    T    HHHHH  FFFF  I  N N N  D  D EEEE  RRR   "
+echo " P    AAAAAA    T    H   H  F     I  N  NN  D  D E     R  R  "
+echo " P    A    A    T    H   H  F     I  N   N  DDD  EEEE  R  R  "
+echo "                                                             "
+echo "                                                     V. 1.1. "
+echo "============================================================="
+echo "*                                                           *"
+echo "*  This scrypt is for authomatic analysis of all possible   *"
+echo "* paths of migration in compounds. Structure  file          *"
+echo "*                  (CONTCAR  or POSCAR)                     *"
+echo "* should be in the same directory. You should also specify  *"
+echo "*      type of ions for which paths will be constructed.    *"
+echo "*   An example of correct run for the scrypt: ./SCRYPT Li   *"
+echo "*                           ***                             *"
+echo "*       Written by Artem Kabanov (artkabanov@mail.ru)       *"
+echo "*                     2017 - 2018                           *"
+echo "*                                                           *"
+echo "============================================================="
+if [ ! -s CONTCAR ]; then
+	if [ ! -s POSCAR ]; then
+echo " "
+echo "============================================================="
+echo "*                                                           *"
+echo "*                       !!! ERROR !!!                       *"
+echo "*  Nothing to do. File CONTCAR is not found or zero-sized.  *"
+echo "*         Please, put CONTCAR at this directory.            *"
+echo "*                                                           *"
+echo "============================================================="
+echo " "
+echo " "
+exit 1
+else
+echo " "
+echo "============================================================="
+echo "*                                                           *"
+echo "*         POSCAR is found. I copy POSCAR -> CONTCAR         *"
+echo "*                        and start job                      *"
+echo "*                                                           *"
+echo "============================================================="
+echo " "
+cp POSCAR CONTCAR
+fi
+fi
+NSPEC=`head -n 7 $FILENAME | tail -n 1 | wc -w`;
+SN=`cat $FILENAME | wc -l`;
+NBODY=$(($SN - 8));
+head  -n 5 $FILENAME >> POSCAR.head #!Save header
+SCALEF=`head -n 2 POSCAR.head | tail -n 1 | awk '{print$1}'`
+x1=`tail -n 3 POSCAR.head | head -n 1 | awk '{print$1}'`
+y1=`tail -n 3 POSCAR.head | head -n 1 | awk '{print$2}'`
+z1=`tail -n 3 POSCAR.head | head -n 1 | awk '{print$3}'`
+x2=`tail -n 2 POSCAR.head | head -n 1 | awk '{print$1}'`
+y2=`tail -n 2 POSCAR.head | head -n 1 | awk '{print$2}'`
+z2=`tail -n 2 POSCAR.head | head -n 1 | awk '{print$3}'`
+x3=`tail -n 1 POSCAR.head | awk '{print$1}'`
+y3=`tail -n 1 POSCAR.head | awk '{print$2}'`
+z3=`tail -n 1 POSCAR.head | awk '{print$3}'`
+#=================================================================================
+#                           HERE WE COMPUTE CELL PARAMETERS
+#=================================================================================
+cos_ax=`echo "scale=8; $x1/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+cos_ay=`echo "scale=8; $y1/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+cos_az=`echo "scale=8; $z1/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+cos_bx=`echo "scale=8; $x2/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+cos_by=`echo "scale=8; $y2/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+cos_bz=`echo "scale=8; $z2/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+cos_cx=`echo "scale=8; $x3/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+cos_cy=`echo "scale=8; $y3/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+cos_cz=`echo "scale=8; $z3/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+sin_ax=`echo "scale=8; sqrt(($y1)^2+($z1)^2)/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+sin_ay=`echo "scale=8; sqrt(($x1)^2+($z1)^2)/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+sin_az=`echo "scale=8; sqrt(($x1)^2+($y1)^2)/sqrt(($x1)^2+($y1)^2+($z1)^2)"|bc -l`;
+sin_bx=`echo "scale=8; sqrt(($y2)^2+($z2)^2)/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+sin_by=`echo "scale=8; sqrt(($x2)^2+($z2)^2)/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+sin_bz=`echo "scale=8; sqrt(($x2)^2+($y2)^2)/sqrt(($x2)^2+($y2)^2+($z2)^2)"|bc -l`;
+sin_cx=`echo "scale=8; sqrt(($y3)^2+($z3)^2)/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+sin_cy=`echo "scale=8; sqrt(($x3)^2+($z3)^2)/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+sin_cz=`echo "scale=8; sqrt(($x3)^2+($y3)^2)/sqrt(($x3)^2+($y3)^2+($z3)^2)"|bc -l`;
+A=`echo "scale=8; sqrt(($x1*$SCALEF)^2+($y1*$SCALEF)^2+($z1*$SCALEF)^2)"|bc -l`;
+B=`echo "scale=8; sqrt(($x2*$SCALEF)^2+($y2*$SCALEF)^2+($z2*$SCALEF)^2)"|bc -l`;
+C=`echo "scale=8; sqrt(($x3*$SCALEF)^2+($y3*$SCALEF)^2+($z3*$SCALEF)^2)"|bc -l`;
+A=`printf "%.5g" $A; echo`
+B=`printf "%.5g" $B; echo`
+C=`printf "%.5g" $C; echo`
+#=================================================================================
+tail -n $NBODY $FILENAME >> POSCAR.body #! Only atomic position
+echo
+echo " ANALYSIS OF STRUCTURE FILE: "
+echo
+echo " CELL PARAMETERS: a= "$A "(A)"
+echo "                  b= "$B "(A)"
+echo "                  c= "$C "(A)"
+echo " " 
+echo " STOICHIOMETRY: Atom type   Number "
+	for i in $(seq 1 $NSPEC)
+	do
+	SUFFIX1=`head -n 6 $FILENAME | tail -n 1 | awk -v n=$i '{print$n}'` #Atom specie name
+	SUFFIX2=`head -n 7 $FILENAME | tail -n 1 | awk -v n=$i '{print$n}'` #Number of atoms
+	echo "                  " $SUFFIX1 "       " $SUFFIX2 #control line
+	echo "                ------------------"
+	head -n $SUFFIX2 POSCAR.body >> POSCAR.$SUFFIX1
+	SN2=`cat POSCAR.body | wc -l`;
+	NBODY2=$(($SN2 - $SUFFIX2));
+	tail -n $NBODY2 POSCAR.body >> POSCAR.body.tmp
+	rm POSCAR.body
+	cp POSCAR.body.tmp POSCAR.body
+	rm POSCAR.body.tmp
+	if [ "$SUFFIX1" != "$MS" ]; then
+	echo -n "  "$SUFFIX1 >> SPECIES.txt
+	echo -n "  "$SUFFIX2 >> SPECIES_N.txt
+	cat POSCAR.$SUFFIX1 >> BODY.vasp
+	else
+	MS_ATOMS_NUM=$SUFFIX2
+	fi
+	done
+cp SPECIES.txt SPECIES_s.txt # For NEB script
+cp SPECIES.txt SPECIES_FULL_MAP.txt # For FULL MAP
+cp SPECIES_N.txt SPECIES_Ns.txt # For NEB script
+cp SPECIES_N.txt SPECIES_Ns2.txt # For NEB script, for full path file
+echo -n "  "$MS_ATOMS_NUM >> SPECIES_N.txt #For FULL MAP
+echo -n "  "$MS >> SPECIES.txt
+echo "  "$MS >> SPECIES_s.txt
+echo -n "  "$MS >> SPECIES_FULL_MAP.txt
+echo
+echo " TYPE OF DIFFUSION ATOMS: " $MS
+echo
+rm POSCAR.body
+SN3=`cat POSCAR.$MS | wc -l`;
+SN4=$(($SN3-1)) #Last atom is exclided from cycle
+echo
+echo -n " PATHS ANALYSIS IN PROGRESS. PLEASE WAIT... "
+#echo -n " *"
+	for j in $(seq 1 $SN4)
+	do
+#	echo -n "-"
+	SN5=$(($j+1))
+	a_j=`head -n $j POSCAR.$MS | tail -n 1 | awk '{print$1}'` #a of j-th atom
+	b_j=`head -n $j POSCAR.$MS | tail -n 1 | awk '{print$2}'` #b of j-th atom
+	c_j=`head -n $j POSCAR.$MS | tail -n 1 | awk '{print$3}'` #c of j-th atom
+	x_j=`echo "scale=6; ($A*$a_j*$cos_ax)+($B*$b_j*$cos_bx)+($C*$c_j*$cos_cx)" | bc -l`;
+	y_j=`echo "scale=6; ($A*$a_j*$cos_ay)+($B*$b_j*$cos_by)+($C*$c_j*$cos_cy)" | bc -l`;
+	z_j=`echo "scale=6; ($A*$a_j*$cos_az)+($B*$b_j*$cos_bz)+($C*$c_j*$cos_cz)" | bc -l`;
+		for k in $(seq $SN5 $SN3)
+		do
+		a_k=`head -n $k POSCAR.$MS | tail -n 1 | awk '{print$1}'` #a of k-th atom
+		b_k=`head -n $k POSCAR.$MS | tail -n 1 | awk '{print$2}'` #b of k-th atom
+		c_k=`head -n $k POSCAR.$MS | tail -n 1 | awk '{print$3}'` #c of k-th atom
+		x_k=`echo "scale=6; ($A*$a_k*$cos_ax)+($B*$b_k*$cos_bx)+($C*$c_k*$cos_cx)" | bc -l`;
+		y_k=`echo "scale=6; ($A*$a_k*$cos_ay)+($B*$b_k*$cos_by)+($C*$c_k*$cos_cy)" | bc -l`;
+		z_k=`echo "scale=6; ($A*$a_k*$cos_az)+($B*$b_k*$cos_bz)+($C*$c_k*$cos_cz)" | bc -l`;
+		Dx=`echo "scale=6; (($x_k)-($x_j))^2"|bc -l`;
+		Dy=`echo "scale=6; (($y_k)-($y_j))^2"|bc -l`;
+		Dz=`echo "scale=6; (($z_k)-($z_j))^2"|bc -l`;
+		Dist=`echo "scale=4; sqrt($Dx+$Dy+$Dz)"|bc -l`;
+		Dist_r=`printf "%1.0f" $Dist; echo`;
+		if [ $Dist_r -le $PATH_LENGTH ]; then
+		Dist=`printf "%.5g" $Dist; echo`
+		echo $j" " $k " "$Dist >> Dist.data;
+		else echo -n ;
+		fi
+		done
+	done
+#echo -n "*"
+#echo " "
+echo -n  "  DONE!  "
+echo " "
+echo " "
+echo -n " PREPARATION OF PATH FILES IN PROGRESS. PLEASE WAIT..."
+#echo -n " *"
+cat Dist.data |sort -n -k 3 >> Dist_rank.data
+rm Dist.data
+max_count=`cat Dist_rank.data | awk '{print$3}' | uniq | wc -l`
+	for k in $(seq 1 $max_count)
+	do
+	mkdir PATH_$k
+	flag=`head -n 1 Dist_rank.data | awk '{print$3}'` #Path $count
+	echo "PATH # " $k >> $OUTFILE
+	echo "PATH # " $k >> PATH_$k/PATH_$k.dat
+	echo "LENGTH = " $flag >> $OUTFILE
+	echo "LENGTH = " $flag >> PATH_$k/PATH_$k.dat
+	echo >> $OUTFILE
+	echo >> PATH_$k/PATH_$k.dat
+	echo "P1  P2  Dist">> PATH_$k/PATH_$k.dat
+	echo "------------">> PATH_$k/PATH_$k.dat
+	cat Dist_rank.data | grep $flag >> $OUTFILE
+	cat Dist_rank.data | grep $flag >> PATH_$k/PATH_$k.dat
+	echo "------------------" >> $OUTFILE
+	cat Dist_rank.data | grep -vs $flag >> Dist_rank_new.data
+	rm Dist_rank.data
+	cat Dist_rank_new.data >> Dist_rank.data
+	rm Dist_rank_new.data
+	done
+rm Dist_rank.data
+file_l=`cat POSCAR.$MS | wc -l`
+file_lm1=$(($file_l - 1 ));
+file_lNPOS=$(($file_l + $NPOS));
+echo "  "$file_lm1 >> SPECIES_Ns.txt
+echo "Direct" >> SPECIES_Ns.txt
+echo "  "$file_lNPOS >> SPECIES_Ns2.txt
+echo "Direct" >> SPECIES_Ns2.txt
+	for D in PATH_*;
+	do
+	PATH_COUNTER=$(($PATH_COUNTER+1));
+#	echo -n "-"
+	test -d $D && (
+	cd $D || continue
+	SUFFIX=`echo $D`
+	NSTRING=`cat $D.dat | wc -l`;
+	N=$(($NSTRING - 5));
+		for m in $(seq 1 $N)
+		do
+		mm=$(($m + 5));
+		ATOM_START=`head -n $mm $D.dat | tail -n 1 | awk '{print$1}'`
+		ATOM_FIN=`head -n $mm $D.dat | tail -n 1 | awk '{print$2}'`
+		sp1=$(($ATOM_START + 1 ));
+		sm1=$(($ATOM_START - 1 ));
+		fp1=$(($ATOM_FIN + 1 ));
+		fm1=$(($ATOM_FIN - 1 ));
+		cp ../POSCAR.$MS POSCAR.$MS
+		mkdir $D.$m
+		if [ $ATOM_START -ge $ATOM_FIN ]; then
+		smf=$(($ATOM_START - $ATOM_FIN));
+		smfm1=$(($smf - 1 ));
+		flms=$(($file_l - $ATOM_START))
+		cat POSCAR.$MS | head -n $sm1 >> $D.$m/POSCAR
+		cat POSCAR.$MS | head -n $ATOM_FIN | tail -n 1 >> $D.$m/POSCAR.f
+		cat POSCAR.$MS | head -n $sm1 | tail -n $smfm1  >> $D.$m/POSCAR
+		cat POSCAR.$MS | head -n $ATOM_START | tail -n 1 >> $D.$m/POSCAR.s
+		cat POSCAR.$MS | tail -n flms >> $D.$m/POSCAR
+		cd $D.$m
+		cat POSCAR POSCAR.s > POSCAR.start
+		cat POSCAR POSCAR.f > POSCAR.finish
+		rm POSCAR.s
+		rm POSCAR.f
+		rm POSCAR
+		cd ../
+		else
+		fms=$(($ATOM_FIN - $ATOM_START));
+		fmsm1=$(($fms - 1 )); 
+		flmf=$(($file_l - $ATOM_FIN))
+		cat POSCAR.$MS | head -n $sm1 >> $D.$m/POSCAR
+		cat POSCAR.$MS | head -n $ATOM_START | tail -n 1 >> $D.$m/POSCAR.s
+		cat POSCAR.$MS | head -n $fm1 | tail -n $fmsm1 >> $D.$m/POSCAR
+		cat POSCAR.$MS | head -n $ATOM_FIN | tail -n 1 >> $D.$m/POSCAR.f
+		cat POSCAR.$MS | tail -n $flmf >> $D.$m/POSCAR
+		cd $D.$m
+		cat POSCAR POSCAR.s > POSCAR.start.tmp
+		cat POSCAR POSCAR.f > POSCAR.finish.tmp
+		rm POSCAR.s
+		rm POSCAR.f
+		rm POSCAR
+#=================================================================================
+#                          HERE WE FORM CORRECT POSCAR FILES
+#=================================================================================
+		cat ../../POSCAR.head ../../SPECIES_Ns.txt ../../BODY.vasp POSCAR.start.tmp > POSCAR.start
+		rm POSCAR.start.tmp
+                cat ../../POSCAR.head ../../SPECIES_Ns.txt ../../BODY.vasp POSCAR.finish.tmp > POSCAR.finish
+                rm POSCAR.finish.tmp
+		cp ../../lib/Vasp.pm Vasp.pm
+		cp ../../lib/nebmake.pl nebmake.pl
+		./nebmake.pl POSCAR.start POSCAR.finish $NPOS
+		rm Vasp.pm
+		rm nebmake.pl
+			for IMAGE in *;
+			do
+			test -d $IMAGE && (
+			cd $IMAGE || continue
+			tail -n 1 POSCAR >> ../PATH.vasp.tmp
+			cd ../
+			rm -rf $IMAGE
+			);
+			done
+		NPOSp1=$(($NPOS + 1))
+		tail -n $NPOSp1 PATH.vasp.tmp | head -n $NPOS >> PATH.vasp.t
+		tail -n $NPOSp1 PATH.vasp.tmp | head -n $NPOS >> ../PATH_total.vasp
+		cat ../../POSCAR.head ../../SPECIES_s.txt ../../SPECIES_Ns2.txt ../../BODY.vasp ../../POSCAR.$MS PATH.vasp.t > PATH.vasp
+		if [ $m -gt 1 ]; then
+                rm POSCAR.start
+                rm POSCAR.finish
+		else
+		mkdir 1
+		POSCAR_LENGTH=`cat POSCAR.start | wc -l`;
+		POSCAR_LENGTH_TRUE=$(($POSCAR_LENGTH - 7));
+		tail -n $POSCAR_LENGTH_TRUE POSCAR.start > POSCAR.start.true
+		cat ../../POSCAR.head ../../SPECIES_s.txt ../../SPECIES_Ns.txt POSCAR.start.true > 1/POSCAR
+		mkdir 2
+                tail -n $POSCAR_LENGTH_TRUE POSCAR.finish > POSCAR.finish.true
+		cat ../../POSCAR.head ../../SPECIES_s.txt ../../SPECIES_Ns.txt POSCAR.finish.true > 2/POSCAR
+		rm POSCAR.start
+		rm POSCAR.finish
+		rm POSCAR.start.true
+                rm POSCAR.finish.true
+                fi
+		rm PATH.vasp.tmp
+		rm PATH.vasp.t
+		cd ../
+		if [ $m -gt 1 ]; then
+		rm -rf $D.$m #Remove subpath directory except the first one
+		fi
+		fi
+		done
+	rm POSCAR.$MS
+	if [ $PATH_COUNTER -gt 100 ]; then
+	PATH_COUNTER_R=$(($PATH_COUNTER - 100))
+	else
+	PATH_COUNTER_R=$PATH_COUNTER
+	fi
+	if [ $PATH_COUNTER_R -le 10 ]; then
+	PATH_ELEMENT=`cat ../lib/Atoms_library | grep '^['$PATH_COUNTER_R'][ ]' | awk '{print$2}'`
+	else
+	PATH_ELEMENT=`cat ../lib/Atoms_library | grep $PATH_COUNTER_R | awk '{print$2}'`
+	fi
+	echo -n "  "$PATH_ELEMENT >> ../SPECIES_FULL_MAP.txt
+	ELEMENT_NUM=`cat PATH_total.vasp | wc -l`
+	echo -n "  "$ELEMENT_NUM >> ../SPECIES_N.txt
+	cd ../
+	);
+	done
+echo " " >> SPECIES_FULL_MAP.txt
+echo " " >> SPECIES_N.txt
+cat POSCAR.head SPECIES_FULL_MAP.txt SPECIES_N.txt BODY.vasp POSCAR.$MS > $FULL_MAP
+for FOLDER in PATH_*;
+do
+test -d $FOLDER && (
+cat $FOLDER/PATH_total.vasp >> $FULL_MAP
+);
+done
+echo "  DONE! "
+#echo -n "  "$PATH_ALIAS >> ../SPECIES.txt
+rm POSCAR.head
+rm POSCAR.*
+rm SPECIES*
+rm BODY.vasp
+echo " " 
+echo "============================================================="
+echo "*                      !!! JOB DONE !!!                     *"
+echo "*                                                           *"
+echo "*     TOTAL NUMBER OF "$MS" DIFFUSION  PATHS: " $max_count "              *"
+echo "*                                                           *"
+echo "*     The full map of the diffusion paths is recorded in    *"
+echo "*                   a file FULL_MAP.vasp                    *"
+echo "*                                                           *"
+echo "============================================================="

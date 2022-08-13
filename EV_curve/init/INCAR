@@ -1,0 +1,11 @@
+SYSTEM = 004
+IBRION = 2        ! ion dynamics type
+ISIF = 4          ! changing volume
+NSW = 150 
+ENCUT = 600     !Energy cutoff
+EDIFF = 1e-6    !Global break condition for the electronic SC-loop
+IVDW = 11         ! DFT-D3 method of Grimme (PBED)
+NCORE = 4
+LAECHG = .FALSE.   ! charge distributions out for bader
+LWAVE = .FALSE.   ! do or do not print WAVECAR
+LAECHG = .FALSE.   ! charge distributions out for bader
