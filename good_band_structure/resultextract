@@ -1,0 +1,21 @@
+for compound in $(ls ../1structures) ; do
+ cd $compound
+ echo "### $compound ###"
+ for length in $(find * -maxdepth 0 -type d) ; do
+  echo -n "K-MESH length = $length! ENCUT = "
+  cd $length
+  for encut in $(find * -maxdepth 0 -type d) ; do
+   cd $encut
+    cd stat/
+    ~/bin/vasp/bandgap.pl OUTCAR > band.txt
+    bg=$(grep "This produces an" band.txt | awk ' {print $8} ')
+    echo -e "$compound $length $encut $bg\n" >> ../../../../tablebg
+   cd ../..
+  done
+  echo "... completed"
+  cd ..
+ done
+ echo "### $compound completed ###"
+ cd ..
+done
+echo "### D O N E ###"
